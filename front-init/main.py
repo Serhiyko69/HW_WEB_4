@@ -26,8 +26,7 @@ class GoitHomework(BaseHTTPRequestHandler):
                 self.send_html("index.html")
             case '/message':
                 self.send_html("message.html")
-            case '/favicon.ico':
-                self.send_favicon("favicon.ico")
+
             case _:
                 file = BASE_DIR.joinpath(route.path[1:])
                 if file.exists():
@@ -35,12 +34,7 @@ class GoitHomework(BaseHTTPRequestHandler):
                 else:
                     self.send_html('error.html', 404)
 
-    def send_favicon(self, filename, status_code=200):
-        self.send_response(status_code)
-        self.send_header('Content-Type', 'image/vnd.microsoft.icon')
-        self.end_headers()
-        with open(filename, 'rb') as file:
-            self.wfile.write(file.read())
+
 
     def do_POST(self):
         data = self.rfile.read(int(self.headers['Content-Length']))
