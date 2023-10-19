@@ -7,6 +7,8 @@ from pathlib import Path
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from threading import Thread
 import datetime
+import os
+
 
 BUFFER_SIZE = 1024
 HTTP_PORT = 3000
@@ -34,27 +36,16 @@ class GoitHomework(BaseHTTPRequestHandler):
                 else:
                     self.send_html('error.html', 404)
 
-
-
     def do_POST(self):
-        data = self.rfile.read(int(self.headers['Content-Length']))
-        parse_data = urllib.parse.unquote_plus(data.decode())
-        try:
-            parse_dict = {key: value for key, value in [el.split('=') for el in parse_data.split('&')]}
+        size = self.headers.get('Content-Length')
+        data = self.rfile.read(int(size))
 
-
-            parse_dict['submission_date'] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-
-            with open('storage/data.json', 'w', encoding='utf-8') as file:
-                json.dump(parse_dict, file, ensure_ascii=False, indent=4)
-                print(parse_data)
-        except ValueError as err:
-            logging.error(err)
-        except OSError as err:
-            logging.error(err)
+        client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        client_socket.sendto(data, (SOCKET_HOST, SOCKET_PORT))
+        client_socket.close()
 
         self.send_response(302)
-        self.send_header('Location', '/message.html')
+        self.send_header('Location', '/message')
         self.end_headers()
 
     def send_html(self, filename, status_code=200):
@@ -81,14 +72,19 @@ def save_data_from_form(data):
     parse_data = urllib.parse.unquote_plus(data.decode())
     try:
         parse_dict = {key: value for key, value in [el.split('=') for el in parse_data.split('&')]}
+        with open('storage/data.json', 'r', encoding='utf-8') as file:
+            data_dict = json.load(file)
+
+        current_time = datetime.datetime.now()
+        key = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        data_dict[key] = parse_dict
+
         with open('storage/data.json', 'w', encoding='utf-8') as file:
-            json.dump(parse_dict, file, ensure_ascii=False, indent=4)
+            json.dump(data_dict, file, ensure_ascii=False, indent=4)
     except ValueError as err:
         logging.error(err)
     except OSError as err:
         logging.error(err)
-
-
 
 def run_socket_server(host, port):
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
